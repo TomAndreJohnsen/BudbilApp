@@ -4,18 +4,36 @@
   --color-bg: #073F4B;
   --color-accent: #9CBD93;
   --color-white: #FFFFFF;
+
+  /* Tablet-optimized sizing (Lenovo IdeaPad 1280x800 DPR 2.0) */
+  --touch-target: 48px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --font-sm: 14px;
+  --font-md: 18px;
+  --font-lg: 24px;
+  --font-xl: 32px;
+  --font-hero: 64px;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* Prevent text selection on touch */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent tap highlight */
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
   font-size: 100%;
   width: 100vw;
   height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile browsers */
   overflow: hidden;
   position: fixed;
   -webkit-text-size-adjust: 100%;
@@ -27,12 +45,30 @@ body {
   color: var(--color-white);
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   position: fixed;
   top: 0;
   left: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent pull-to-refresh */
+  overscroll-behavior: none;
+}
+
+/* Touch-friendly buttons */
+button, .btn {
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* Input fields */
+input, textarea {
+  font-size: 16px; /* Prevents zoom on iOS */
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* Animations */
@@ -52,22 +88,70 @@ body {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.03);
+    transform: scale(1.02);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 
 .animate-fadeInDown {
-  animation: fadeInDown 1s ease-out;
+  animation: fadeInDown 0.5s ease-out;
 }
 
 .animate-pulse-slow {
   animation: pulse 2s ease-in-out infinite;
 }
 
-/* Scrollable containers */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Scrollable containers - optimized for touch */
 .scrollable {
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   position: relative;
   height: 100%;
+  /* Hide scrollbar but keep functionality */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.3) transparent;
+}
+
+.scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.3);
+  border-radius: 3px;
+}
+
+/* Landscape-only warning (optional) */
+@media (orientation: portrait) and (max-width: 800px) {
+  body::before {
+    content: "Vennligst roter enheten til landskapsmodus";
+    position: fixed;
+    inset: 0;
+    background: var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-lg);
+    text-align: center;
+    padding: var(--spacing-xl);
+    z-index: 9999;
+  }
 }

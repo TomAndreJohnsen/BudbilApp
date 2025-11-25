@@ -6,13 +6,13 @@ export default function Home() {
   const router = useRouter();
 
   return (
-    <div className="h-screen w-full bg-[var(--color-bg)] flex flex-col justify-center items-center gap-[8vh]">
-      <h1 className="text-white font-extrabold text-[clamp(8vh,14vh,18vh)] tracking-[0.6vw] uppercase animate-fadeInDown">
+    <div className="h-dvh w-full bg-[var(--color-bg)] flex flex-col justify-center items-center gap-8">
+      <h1 className="text-white font-extrabold text-6xl md:text-7xl lg:text-8xl tracking-wider uppercase animate-fadeInDown">
         BUDBIL
       </h1>
       <button
         onClick={() => router.push("/carriers")}
-        className="w-[clamp(22vh,30vh,38vh)] h-[clamp(22vh,30vh,38vh)] rounded-full bg-[var(--color-accent)] text-white font-extrabold text-[clamp(2.4vh,3.2vh,4vh)] uppercase shadow-[0_1.5vh_3vh_rgba(0,0,0,0.35)] hover:scale-95 active:scale-90 transition-transform animate-pulse-slow flex items-center justify-center"
+        className="w-40 h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-full bg-[var(--color-accent)] text-white font-extrabold text-xl md:text-2xl uppercase shadow-2xl hover:scale-95 active:scale-90 transition-transform animate-pulse-slow flex items-center justify-center"
       >
         TRYKK HER
       </button>
