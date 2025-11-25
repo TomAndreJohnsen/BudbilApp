@@ -10,15 +10,22 @@ interface Carrier {
   ContactPhone: string | null;
 }
 
+const ITEMS_PER_PAGE = 8;
+
 export default function CarriersPage() {
   const router = useRouter();
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [pin, setPin] = useState("");
   const [newCarrierName, setNewCarrierName] = useState("");
   const [pinError, setPinError] = useState(false);
+
+  const totalPages = Math.ceil(carriers.length / ITEMS_PER_PAGE);
+  const startIndex = currentPage * ITEMS_PER_PAGE;
+  const visibleCarriers = carriers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   useEffect(() => {
     fetchCarriers();
@@ -81,95 +88,117 @@ export default function CarriersPage() {
 
   if (loading) {
     return (
-      <div className="h-dvh w-full bg-[var(--color-bg)] flex items-center justify-center">
+      <div className="h-dvh w-full bg-[#073F4B] flex items-center justify-center">
         <div className="text-white text-2xl">Laster...</div>
       </div>
     );
   }
 
   return (
-    <div className="h-dvh bg-[var(--color-bg)] p-4 flex flex-col">
-      {/* Header - compact for tablet */}
-      <div className="text-center py-2">
-        <h1 className="text-[var(--color-accent)] text-3xl md:text-4xl font-extrabold uppercase">
-          Velg Budbilfirma
-        </h1>
-        <p className="text-white/70 text-sm md:text-base mt-1">
-          Trykk på et firma for å se ventende ordrer
-        </p>
-      </div>
-
-      {/* Carrier Grid - 4 cols x 3 rows for landscape tablet */}
-      <div className="flex-1 grid grid-cols-4 grid-rows-3 gap-3 py-2">
-        {carriers.map((carrier) => (
+    <div className="h-dvh bg-[#073F4B] flex flex-col p-4">
+      {/* Carrier Grid - 4x2 */}
+      <div className="flex-1 grid grid-cols-4 grid-rows-2 gap-4 mb-4">
+        {visibleCarriers.map((carrier) => (
           <button
             key={carrier.CarrierID}
             onClick={() => selectCarrier(carrier.CarrierID)}
-            className="bg-[var(--color-accent)] text-white rounded-2xl shadow-lg flex flex-col justify-center items-center p-3 font-bold text-base hover:scale-[0.97] active:scale-95 transition-transform"
+            className="bg-[#9CBD93] rounded-2xl shadow-lg flex flex-col items-center justify-center p-4 hover:scale-[0.98] active:scale-95 transition-transform"
           >
-            {carrier.LogoPath ? (
-              <img
-                src={carrier.LogoPath.startsWith("/") ? carrier.LogoPath : `/${carrier.LogoPath}`}
-                alt={carrier.CompanyName}
-                className="object-contain w-16 h-16 mb-1"
-              />
-            ) : (
-              <i className="bi bi-truck text-4xl mb-1"></i>
-            )}
-            <span className="text-center text-sm leading-tight line-clamp-2">
+            {/* White circle for logo */}
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-3 shadow-md">
+              {carrier.LogoPath ? (
+                <img
+                  src={carrier.LogoPath.startsWith("/") ? carrier.LogoPath : `/${carrier.LogoPath}`}
+                  alt={carrier.CompanyName}
+                  className="w-20 h-20 object-contain rounded-full"
+                />
+              ) : (
+                <i className="bi bi-truck text-4xl text-[#073F4B]"></i>
+              )}
+            </div>
+            {/* Company name - dark text */}
+            <span className="text-[#073F4B] font-bold text-center text-lg leading-tight">
               {carrier.CompanyName}
             </span>
           </button>
         ))}
+      </div>
 
-        {/* Add New Carrier Button */}
+      {/* Bottom Navigation Bar */}
+      <div className="grid grid-cols-4 gap-4 h-16">
+        <button
+          onClick={() => router.push("/")}
+          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+        >
+          TILBAKE
+        </button>
         <button
           onClick={() => setShowPinModal(true)}
-          className="bg-white/10 text-white rounded-2xl shadow-lg flex flex-col justify-center items-center p-3 font-bold text-base hover:bg-white/20 transition-colors border-2 border-dashed border-white/40"
+          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
         >
-          <i className="bi bi-plus-circle text-4xl mb-1"></i>
-          <span className="text-sm">Legg til</span>
+          LEGG TIL
+        </button>
+        {/* Pagination dots */}
+        <div className="border-2 border-[#9CBD93] rounded-xl flex items-center justify-center gap-2">
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentPage(i)}
+              className={`w-3 h-3 rounded-full transition-colors ${
+                i === currentPage ? "bg-white" : "bg-white/30"
+              }`}
+            />
+          ))}
+        </div>
+        <button
+          onClick={() => router.push("/")}
+          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+        >
+          HJEM
         </button>
       </div>
 
       {/* PIN Modal */}
       {showPinModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--color-bg)] p-6 rounded-2xl w-full max-w-sm border border-white/20">
-            <h2 className="text-white text-xl font-bold mb-4 text-center">
-              Skriv inn PIN-kode
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#073F4B] p-8 rounded-2xl w-full max-w-lg border border-[#9CBD93]/30">
+            <h2 className="text-[#9CBD93] text-2xl font-bold mb-2 text-center">
+              Be om assistanse fra en ansatt
             </h2>
+            <p className="text-white text-center mb-6">
+              Skriv inn pinkode for å legge til nytt firma
+            </p>
             <input
               type="password"
               inputMode="numeric"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && verifyPin()}
-              placeholder="PIN"
-              className={`w-full p-4 text-2xl text-center rounded-xl bg-white/10 text-white border-2 ${
-                pinError ? "border-red-500" : "border-white/30"
-              } focus:border-[var(--color-accent)] outline-none`}
+              placeholder="Pinkode"
+              className={`w-full p-4 text-xl text-center rounded-xl bg-white text-gray-800 border-2 ${
+                pinError ? "border-red-500" : "border-[#9CBD93]"
+              } outline-none`}
               autoFocus
             />
             {pinError && (
-              <p className="text-red-400 text-center mt-2 text-sm">Feil PIN-kode</p>
+              <p className="text-red-400 text-center mt-2">Feil PIN-kode</p>
             )}
-            <div className="flex gap-3 mt-4">
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={verifyPin}
+                className="flex-1 p-4 rounded-xl bg-[#9CBD93] text-white font-bold text-lg uppercase"
+              >
+                OK
+              </button>
               <button
                 onClick={() => {
                   setShowPinModal(false);
                   setPin("");
                   setPinError(false);
                 }}
-                className="flex-1 p-3 rounded-xl bg-white/20 text-white font-bold text-lg"
+                className="flex-1 p-4 rounded-xl bg-gray-500 text-white font-bold text-lg uppercase"
               >
-                Avbryt
-              </button>
-              <button
-                onClick={verifyPin}
-                className="flex-1 p-3 rounded-xl bg-[var(--color-accent)] text-white font-bold text-lg"
-              >
-                OK
+                AVBRYT
               </button>
             </div>
           </div>
@@ -178,10 +207,10 @@ export default function CarriersPage() {
 
       {/* Add Carrier Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--color-bg)] p-6 rounded-2xl w-full max-w-sm border border-white/20">
-            <h2 className="text-white text-xl font-bold mb-4 text-center">
-              Legg til budbilfirma
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#073F4B] p-8 rounded-2xl w-full max-w-lg border border-[#9CBD93]/30">
+            <h2 className="text-[#9CBD93] text-2xl font-bold mb-6 text-center">
+              Legg til nytt budbilfirma
             </h2>
             <input
               type="text"
@@ -189,24 +218,24 @@ export default function CarriersPage() {
               onChange={(e) => setNewCarrierName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addCarrier()}
               placeholder="Firmanavn"
-              className="w-full p-4 text-lg rounded-xl bg-white/10 text-white border-2 border-white/30 focus:border-[var(--color-accent)] outline-none"
+              className="w-full p-4 text-xl rounded-xl bg-white text-gray-800 border-2 border-[#9CBD93] outline-none"
               autoFocus
             />
-            <div className="flex gap-3 mt-4">
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={addCarrier}
+                className="flex-1 p-4 rounded-xl bg-[#9CBD93] text-white font-bold text-lg uppercase"
+              >
+                OK
+              </button>
               <button
                 onClick={() => {
                   setShowAddModal(false);
                   setNewCarrierName("");
                 }}
-                className="flex-1 p-3 rounded-xl bg-white/20 text-white font-bold text-lg"
+                className="flex-1 p-4 rounded-xl bg-gray-500 text-white font-bold text-lg uppercase"
               >
-                Avbryt
-              </button>
-              <button
-                onClick={addCarrier}
-                className="flex-1 p-3 rounded-xl bg-[var(--color-accent)] text-white font-bold text-lg"
-              >
-                Lagre
+                AVBRYT
               </button>
             </div>
           </div>

@@ -14,6 +14,8 @@ interface Order {
   NumberOfPackages: number | null;
   Weight: number | null;
   PhotoURL: string | null;
+  Comment: string | null;
+  Reference: string | null;
   carrierOrder: {
     CarrierOrderID: number;
     ShelfNumber: number;
@@ -23,27 +25,32 @@ interface Order {
   } | null;
 }
 
+const ITEMS_PER_PAGE = 6;
+
 function OrdersContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const carrierId = searchParams.get("carrier");
 
   const [orders, setOrders] = useState<Order[]>([]);
-  const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [carrierName, setCarrierName] = useState<string>("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [showOnlyPending, setShowOnlyPending] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const totalPages = Math.ceil(orders.length / ITEMS_PER_PAGE);
+  const startIndex = currentPage * ITEMS_PER_PAGE;
+  const visibleOrders = orders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   useEffect(() => {
     fetchOrders();
-  }, [carrierId, showOnlyPending]);
+  }, [carrierId]);
 
   async function fetchOrders() {
     try {
       const url = carrierId
-        ? `/api/orders?carrier=${carrierId}&pending=${showOnlyPending}`
-        : `/api/orders?pending=${showOnlyPending}`;
+        ? `/api/orders?carrier=${carrierId}&pending=true`
+        : `/api/orders?pending=true`;
       const res = await fetch(url);
       const data = await res.json();
       setOrders(data.orders || []);
@@ -57,193 +64,191 @@ function OrdersContent() {
     }
   }
 
-  function toggleOrder(orderId: number) {
-    setSelectedOrders((prev) =>
-      prev.includes(orderId)
-        ? prev.filter((id) => id !== orderId)
-        : [...prev, orderId]
-    );
-  }
-
-  function goToSignature() {
-    if (selectedOrders.length === 0) return;
-    const orderIds = selectedOrders.join(",");
-    router.push(`/orders/signature?orders=${orderIds}&carrier=${carrierId || ""}`);
-  }
-
   function getPostalCode(order: Order): string {
-    return order.DeliveryZip || order.DeliveryPostalCode || "-";
+    return order.DeliveryZip || order.DeliveryPostalCode || "";
+  }
+
+  function openOrderDetail(order: Order) {
+    setSelectedOrder(order);
+  }
+
+  function goToSignature(order: Order) {
+    router.push(`/orders/signature?orders=${order.OrderID}&carrier=${carrierId || ""}`);
   }
 
   if (loading) {
     return (
-      <div className="h-dvh w-full bg-[var(--color-bg)] flex items-center justify-center">
+      <div className="h-dvh w-full bg-[#073F4B] flex items-center justify-center">
         <div className="text-white text-2xl">Laster...</div>
       </div>
     );
   }
 
   return (
-    <div className="h-dvh bg-[var(--color-bg)] p-4 flex flex-col">
-      {/* Header - compact */}
-      <div className="flex items-center justify-between py-2">
-        <div>
-          <h1 className="text-[var(--color-accent)] text-2xl md:text-3xl font-extrabold uppercase">
-            {carrierName || "Alle Ordrer"}
-          </h1>
-          <p className="text-white/70 text-sm">
-            {orders.length} {orders.length === 1 ? "ordre" : "ordrer"} venter
-          </p>
-        </div>
-        <button
-          onClick={() => setShowOnlyPending(!showOnlyPending)}
-          className={`px-4 py-2 rounded-full font-bold text-sm transition-colors ${
-            showOnlyPending
-              ? "bg-[var(--color-accent)] text-white"
-              : "bg-white/20 text-white"
-          }`}
-        >
-          {showOnlyPending ? "Vis alle" : "Kun ventende"}
-        </button>
-      </div>
-
-      {/* Orders List - scrollable */}
-      <div className="flex-1 overflow-y-auto scrollable py-2">
-        {orders.length === 0 ? (
-          <div className="text-center text-white/60 text-lg py-8">
-            Ingen ordrer funnet
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {orders.map((order) => (
-              <div
-                key={order.OrderID}
-                className={`bg-white/10 rounded-xl p-3 flex items-center gap-3 cursor-pointer transition-all ${
-                  selectedOrders.includes(order.OrderID)
-                    ? "ring-2 ring-[var(--color-accent)] bg-white/20"
-                    : ""
-                }`}
-                onClick={() => toggleOrder(order.OrderID)}
-              >
-                {/* Checkbox */}
-                <div
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0 ${
-                    selectedOrders.includes(order.OrderID)
-                      ? "bg-[var(--color-accent)] text-white"
-                      : "bg-white/20"
-                  }`}
-                >
-                  {selectedOrders.includes(order.OrderID) && (
-                    <i className="bi bi-check-lg"></i>
-                  )}
-                </div>
-
-                {/* Order Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-white font-bold text-base truncate">
-                      {order.CustomerName || "Ukjent kunde"}
-                    </span>
-                    <span className="bg-[var(--color-accent)] text-white px-2 py-0.5 rounded-full text-xs font-bold">
-                      {getPostalCode(order)}
-                    </span>
-                  </div>
-                  <div className="text-white/60 text-xs mt-0.5 truncate">
-                    {order.Location} | {order.NumberOfPackages || 1} kolli | {order.Weight || 0} kg
-                  </div>
-                </div>
-
-                {/* Details Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedOrder(order);
-                  }}
-                  className="w-10 h-10 rounded-lg bg-white/20 text-white flex items-center justify-center text-lg shrink-0"
-                >
-                  <i className="bi bi-info-circle"></i>
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Action Bar - fixed height */}
-      {selectedOrders.length > 0 && (
-        <div className="pt-2 border-t border-white/20">
-          <button
-            onClick={goToSignature}
-            className="w-full py-4 rounded-xl bg-[var(--color-accent)] text-white font-bold text-lg flex items-center justify-center gap-2"
-          >
-            <i className="bi bi-pencil-square"></i>
-            Signer {selectedOrders.length} {selectedOrders.length === 1 ? "ordre" : "ordrer"}
-          </button>
-        </div>
-      )}
-
-      {/* Order Detail Modal */}
-      {selectedOrder && (
-        <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedOrder(null)}
-        >
+    <div className="h-dvh bg-[#073F4B] flex flex-col p-4">
+      {/* Orders Grid - 3 cols x 2 rows */}
+      <div className="flex-1 grid grid-cols-3 grid-rows-2 gap-4 mb-4">
+        {visibleOrders.map((order) => (
           <div
-            className="bg-[var(--color-bg)] p-5 rounded-2xl w-full max-w-md border border-white/20 max-h-[80dvh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            key={order.OrderID}
+            className="bg-white rounded-2xl shadow-lg flex overflow-hidden cursor-pointer hover:scale-[0.99] active:scale-[0.97] transition-transform"
+            onClick={() => openOrderDetail(order)}
           >
-            <div className="flex justify-between items-start mb-3">
-              <h2 className="text-white text-xl font-bold">
-                {selectedOrder.CustomerName || "Ukjent kunde"}
-              </h2>
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="w-10 h-10 flex items-center justify-center text-white/60 text-xl"
-              >
-                <i className="bi bi-x-lg"></i>
-              </button>
-            </div>
-
-            <div className="space-y-2 text-white text-sm">
-              <div className="flex justify-between py-2 border-b border-white/10">
-                <span className="text-white/60">Postnummer</span>
-                <span className="font-bold text-lg text-[var(--color-accent)]">
-                  {getPostalCode(selectedOrder)}
-                </span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-white/10">
-                <span className="text-white/60">Adresse</span>
-                <span>{selectedOrder.DeliveryAddress || "-"}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-white/10">
-                <span className="text-white/60">By</span>
-                <span>{selectedOrder.DeliveryCity || "-"}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-white/10">
-                <span className="text-white/60">Plassering</span>
-                <span>{selectedOrder.Location || "-"}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-white/10">
-                <span className="text-white/60">Kolli / Vekt</span>
-                <span>{selectedOrder.NumberOfPackages || 1} stk / {selectedOrder.Weight || 0} kg</span>
-              </div>
-              {selectedOrder.carrierOrder && (
-                <div className="flex justify-between py-2 border-b border-white/10">
-                  <span className="text-white/60">Transportor</span>
-                  <span>{selectedOrder.carrierOrder.carrier.CompanyName}</span>
+            {/* Image on left */}
+            <div className="w-1/3 bg-gray-200 flex-shrink-0">
+              {order.PhotoURL ? (
+                <img
+                  src={order.PhotoURL}
+                  alt="Ordre"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-[#9CBD93]/30">
+                  <i className="bi bi-box-seam text-4xl text-[#073F4B]/50"></i>
                 </div>
               )}
             </div>
+            {/* Info on right */}
+            <div className="flex-1 p-4 flex flex-col justify-center">
+              <h3 className="text-[#073F4B] font-bold text-lg leading-tight mb-1">
+                {order.CustomerName || "Ukjent kunde"}
+              </h3>
+              {order.DeliveryAddress && (
+                <p className="text-gray-600 text-sm mb-2">{order.DeliveryAddress}</p>
+              )}
+              {getPostalCode(order) && (
+                <span className="inline-block bg-[#9CBD93] text-white px-3 py-1 rounded text-sm font-bold w-fit mb-2">
+                  {getPostalCode(order)} {order.DeliveryCity || ""}
+                </span>
+              )}
+              <p className="text-[#9CBD93] text-sm font-medium">
+                Trykk for mer info
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
 
-            {selectedOrder.PhotoURL && (
-              <div className="mt-3">
-                <img
-                  src={selectedOrder.PhotoURL}
-                  alt="Ordre foto"
-                  className="w-full rounded-xl max-h-40 object-cover"
-                />
+      {/* Bottom Navigation Bar */}
+      <div className="grid grid-cols-4 gap-4 h-16">
+        <button
+          onClick={() => router.push("/carriers")}
+          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+        >
+          TILBAKE
+        </button>
+        <button
+          onClick={() => router.push("/orders")}
+          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+        >
+          MINE ORDRE
+        </button>
+        {/* Pagination dots */}
+        <div className="border-2 border-[#9CBD93] rounded-xl flex items-center justify-center gap-2">
+          {Array.from({ length: Math.max(totalPages, 1) }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentPage(i)}
+              className={`w-3 h-3 rounded-full transition-colors ${
+                i === currentPage ? "bg-white" : "bg-white/30"
+              }`}
+            />
+          ))}
+        </div>
+        <button
+          onClick={() => router.push("/")}
+          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+        >
+          HJEM
+        </button>
+      </div>
+
+      {/* Order Detail Modal */}
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#073F4B] rounded-2xl w-full max-w-3xl overflow-hidden">
+            {/* Header badges */}
+            <div className="flex">
+              <div className="flex-1 bg-[#E91E63] py-3 text-center">
+                <span className="text-white font-bold text-2xl">
+                  HYLLE {selectedOrder.carrierOrder?.ShelfNumber || "-"}
+                </span>
               </div>
-            )}
+              <div className="flex-1 bg-[#26A69A] py-3 text-center">
+                <span className="text-white font-bold text-2xl">
+                  KOLLI: {selectedOrder.NumberOfPackages || 1}
+                </span>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 flex gap-6">
+              {/* Image */}
+              <div className="w-1/2">
+                {selectedOrder.PhotoURL ? (
+                  <img
+                    src={selectedOrder.PhotoURL}
+                    alt="Ordre"
+                    className="w-full rounded-xl"
+                  />
+                ) : (
+                  <div className="w-full h-64 bg-[#9CBD93]/20 rounded-xl flex items-center justify-center">
+                    <i className="bi bi-image text-6xl text-white/30"></i>
+                  </div>
+                )}
+              </div>
+              {/* Info */}
+              <div className="flex-1 text-white space-y-2">
+                <p>
+                  <span className="text-[#9CBD93]">Kunde:</span>{" "}
+                  {selectedOrder.CustomerName || "Ukjent"}
+                </p>
+                <p>
+                  <span className="text-[#9CBD93]">OrdreID:</span>{" "}
+                  {selectedOrder.OrderID}
+                </p>
+                <p>
+                  <span className="text-[#9CBD93]">Ref:</span>{" "}
+                  {selectedOrder.Reference || selectedOrder.DeliveryAddress || "-"}
+                </p>
+                <p>
+                  <span className="text-[#9CBD93]">Vekt:</span>{" "}
+                  {selectedOrder.Weight || 0} kg
+                </p>
+                {selectedOrder.Comment && (
+                  <p>
+                    <span className="text-[#9CBD93]">Kommentar:</span>{" "}
+                    <span className="italic">{selectedOrder.Comment}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom buttons */}
+            <div className="grid grid-cols-4 gap-4 p-4">
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-base py-3 uppercase"
+              >
+                LUKK
+              </button>
+              <button
+                className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-base py-3 uppercase"
+              >
+                HENT FLERE
+              </button>
+              <button
+                className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-base py-3 uppercase"
+              >
+                FJERN ORDRE
+              </button>
+              <button
+                onClick={() => goToSignature(selectedOrder)}
+                className="bg-[#9CBD93] text-white rounded-xl font-bold text-base py-3 uppercase"
+              >
+                HENT UT ORDRE
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -255,7 +260,7 @@ export default function OrdersPage() {
   return (
     <Suspense
       fallback={
-        <div className="h-dvh w-full bg-[var(--color-bg)] flex items-center justify-center">
+        <div className="h-dvh w-full bg-[#073F4B] flex items-center justify-center">
           <div className="text-white text-2xl">Laster...</div>
         </div>
       }

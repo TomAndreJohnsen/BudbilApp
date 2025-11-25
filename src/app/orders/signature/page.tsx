@@ -13,6 +13,7 @@ function SignatureContent() {
   const sigCanvas = useRef<SignatureCanvas>(null);
   const [driverName, setDriverName] = useState("");
   const [driverPhone, setDriverPhone] = useState("");
+  const [orderReference, setOrderReference] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -63,97 +64,109 @@ function SignatureContent() {
   }
 
   return (
-    <div className="h-dvh bg-[var(--color-bg)] p-4 flex flex-col">
-      {/* Header - compact */}
-      <div className="text-center py-2">
-        <h1 className="text-[var(--color-accent)] text-2xl md:text-3xl font-extrabold uppercase">
-          Signatur
-        </h1>
-        <p className="text-white/70 text-sm">
-          {orderIds.length} {orderIds.length === 1 ? "ordre" : "ordrer"} valgt
+    <div className="h-dvh bg-[#073F4B] flex flex-col p-4">
+      {/* Yellow Header with Order ID */}
+      <div className="bg-[#FDD835] rounded-xl py-3 mb-4">
+        <p className="text-center text-[#073F4B] font-bold text-xl">
+          OrdreID: {orderIds.join(", ")}
         </p>
       </div>
 
-      {/* Main content - landscape layout */}
-      <div className="flex-1 flex gap-4 py-2">
-        {/* Left side - Driver info */}
-        <div className="w-1/3 flex flex-col gap-3">
+      {/* 3 Input Fields in a row */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <div>
+          <label className="text-[#9CBD93] text-sm font-medium mb-1 block">Navn</label>
           <input
             type="text"
             value={driverName}
             onChange={(e) => setDriverName(e.target.value)}
-            placeholder="Sjaforens navn *"
-            className="w-full p-3 text-base rounded-xl bg-white/10 text-white border-2 border-white/30 focus:border-[var(--color-accent)] outline-none placeholder:text-white/50"
+            placeholder="Skriv inn navn..."
+            className="w-full p-3 text-base rounded-xl bg-[#9CBD93]/20 text-white border border-[#9CBD93]/50 outline-none placeholder:text-white/50"
           />
+        </div>
+        <div>
+          <label className="text-[#9CBD93] text-sm font-medium mb-1 block">Telefon</label>
           <input
             type="tel"
             inputMode="tel"
             value={driverPhone}
             onChange={(e) => setDriverPhone(e.target.value)}
-            placeholder="Telefonnummer (valgfritt)"
-            className="w-full p-3 text-base rounded-xl bg-white/10 text-white border-2 border-white/30 focus:border-[var(--color-accent)] outline-none placeholder:text-white/50"
+            placeholder="Skriv inn telefon..."
+            className="w-full p-3 text-base rounded-xl bg-[#9CBD93]/20 text-white border border-[#9CBD93]/50 outline-none placeholder:text-white/50"
           />
+        </div>
+        <div>
+          <label className="text-[#9CBD93] text-sm font-medium mb-1 block">Ordrenummer</label>
+          <input
+            type="text"
+            value={orderReference}
+            onChange={(e) => setOrderReference(e.target.value)}
+            placeholder="Skriv inn ordrenr..."
+            className="w-full p-3 text-base rounded-xl bg-[#9CBD93]/20 text-white border border-[#9CBD93]/50 outline-none placeholder:text-white/50"
+          />
+        </div>
+      </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="p-2 bg-red-500/20 border border-red-500 rounded-xl text-red-400 text-center text-sm">
-              {error}
-            </div>
+      {/* Signature label */}
+      <label className="text-[#9CBD93] text-sm font-medium mb-1 block">Signatur</label>
+
+      {/* Signature Canvas */}
+      <div className="flex-1 bg-white rounded-xl relative mb-4">
+        <SignatureCanvas
+          ref={sigCanvas}
+          canvasProps={{
+            className: "w-full h-full rounded-xl touch-none",
+            style: { width: "100%", height: "100%", touchAction: "none" },
+          }}
+          backgroundColor="white"
+          penColor="black"
+          minWidth={2}
+          maxWidth={4}
+        />
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-2 bg-red-500/20 border border-red-500 rounded-xl text-red-400 text-center text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Bottom Navigation Bar */}
+      <div className="grid grid-cols-4 gap-4 h-16">
+        <button
+          onClick={() => router.back()}
+          disabled={saving}
+          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+        >
+          TILBAKE
+        </button>
+        <button
+          onClick={clearSignature}
+          disabled={saving}
+          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+        >
+          SLETT
+        </button>
+        <button
+          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+        >
+          VIS LOKASJON
+        </button>
+        <button
+          onClick={saveSignature}
+          disabled={saving}
+          className="bg-[#9CBD93] text-white rounded-xl font-bold text-lg uppercase flex items-center justify-center gap-2"
+        >
+          {saving ? (
+            <>
+              <i className="bi bi-arrow-repeat animate-spin"></i>
+              LAGRER...
+            </>
+          ) : (
+            "BEKREFT"
           )}
-
-          {/* Action Buttons */}
-          <div className="flex-1" />
-          <div className="flex gap-3">
-            <button
-              onClick={() => router.back()}
-              className="flex-1 py-3 rounded-xl bg-white/20 text-white font-bold text-base"
-              disabled={saving}
-            >
-              Avbryt
-            </button>
-            <button
-              onClick={saveSignature}
-              className="flex-1 py-3 rounded-xl bg-[var(--color-accent)] text-white font-bold text-base flex items-center justify-center gap-2"
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <i className="bi bi-arrow-repeat animate-spin"></i>
-                  Lagrer...
-                </>
-              ) : (
-                <>
-                  <i className="bi bi-check-lg"></i>
-                  Bekreft
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Right side - Signature Canvas */}
-        <div className="flex-1 bg-white rounded-2xl relative">
-          <SignatureCanvas
-            ref={sigCanvas}
-            canvasProps={{
-              className: "w-full h-full rounded-2xl touch-none",
-              style: { width: "100%", height: "100%", touchAction: "none" },
-            }}
-            backgroundColor="white"
-            penColor="black"
-            minWidth={2}
-            maxWidth={4}
-          />
-          <button
-            onClick={clearSignature}
-            className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1.5 rounded-lg font-bold text-sm"
-          >
-            Slett
-          </button>
-          <div className="absolute bottom-3 left-3 text-gray-400 text-sm pointer-events-none">
-            Signer her
-          </div>
-        </div>
+        </button>
       </div>
     </div>
   );
@@ -163,7 +176,7 @@ export default function SignaturePage() {
   return (
     <Suspense
       fallback={
-        <div className="h-dvh w-full bg-[var(--color-bg)] flex items-center justify-center">
+        <div className="h-dvh w-full bg-[#073F4B] flex items-center justify-center">
           <div className="text-white text-2xl">Laster...</div>
         </div>
       }
