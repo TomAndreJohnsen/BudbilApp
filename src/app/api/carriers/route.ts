@@ -11,10 +11,8 @@ export async function GET() {
     return NextResponse.json(carriers);
   } catch (error) {
     console.error("Failed to fetch carriers:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch carriers" },
-      { status: 500 }
-    );
+    // Return empty array on error so UI doesn't break
+    return NextResponse.json([]);
   }
 }
 

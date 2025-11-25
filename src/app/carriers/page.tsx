@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 interface Carrier {
   CarrierID: number;
@@ -29,9 +28,11 @@ export default function CarriersPage() {
     try {
       const res = await fetch("/api/carriers");
       const data = await res.json();
-      setCarriers(data);
+      // Ensure data is an array
+      setCarriers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch carriers:", err);
+      setCarriers([]);
     } finally {
       setLoading(false);
     }
@@ -108,12 +109,11 @@ export default function CarriersPage() {
             className="bg-[var(--color-accent)] text-white rounded-[3vh] shadow-[0_1vh_2vh_rgba(0,0,0,0.2)] flex flex-col justify-center items-center p-[2vh] font-bold text-[clamp(2vh,2.6vh,3vh)] hover:scale-[0.97] active:scale-95 transition-transform"
           >
             {carrier.LogoPath ? (
-              <Image
-                src={carrier.LogoPath}
+              <img
+                src={carrier.LogoPath.startsWith("/") ? carrier.LogoPath : `/${carrier.LogoPath}`}
                 alt={carrier.CompanyName}
-                width={80}
-                height={80}
-                className="object-contain mb-2 max-h-[8vh]"
+                className="object-contain mb-2 max-h-[8vh] w-auto"
+                style={{ maxWidth: "80px", maxHeight: "80px" }}
               />
             ) : (
               <i className="bi bi-truck text-[5vh] mb-2"></i>
