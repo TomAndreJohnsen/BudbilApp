@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model PickupOrder {
+  OrderID            Int       @id @default(autoincrement())
+  CustomerName       String?   @db.NVarChar(255)
+  Location           String?   @db.NVarChar(100)
+  Status             String?   @db.NVarChar(20)
+  Comment            String?   @db.NVarChar(Max)
+  Reference          String?   @db.NVarChar(50)
+  YourRef            String?   @db.NVarChar(50)
+  CreatedAt          DateTime?
+  CreatedBy          String?   @db.NVarChar(100)
+  PhotoURL           String?   @db.NVarChar(500)
+  NotificationPhone  String?   @db.NVarChar(50)
+  NotificationEmail  String?   @db.NVarChar(255)
+  DeliveredBy        String?   @db.NVarChar(100)
+  DeliveredAt        DateTime?
+  SignatureURL       String?   @db.NVarChar(500)
+  NumberOfPackages   Int?
+  Weight             Decimal?  @db.Decimal(10, 2)
+  DeliveryAddress    String?   @db.NVarChar(255)
+  DeliveryZip        String?   @db.NVarChar(20)
+  DeliveryPostalCode String?   @db.NVarChar(20)
+  DeliveryCity       String?   @db.NVarChar(100)
+
+  carrierOrder CarrierOrder?
+
+  @@map("PickupOrders")
+}
+
+model CarrierOrder {
+  CarrierOrderID Int       @id @default(autoincrement())
+  OrderID        Int       @unique
+  CarrierID      Int
+  ShelfNumber    Int
+  DriverName     String?   @db.NVarChar(255)
+  DriverPhone    String?   @db.NVarChar(50)
+  SignatureData  String?   @db.NVarChar(Max)
+  PickedUpAt     DateTime?
+  CreatedAt      DateTime  @default(now())
+
+  order   PickupOrder @relation(fields: [OrderID], references: [OrderID])
+  carrier Carrier     @relation(fields: [CarrierID], references: [CarrierID])
+
+  @@map("CarrierOrders")
+}
+
+model Carrier {
+  CarrierID    Int       @id @default(autoincrement())
+  CompanyName  String    @unique @db.NVarChar(255)
+  ContactEmail String?   @db.NVarChar(255)
+  ContactPhone String?   @db.NVarChar(50)
+  LogoPath     String?   @db.NVarChar(500)
+  TrackingURL  String?   @db.NVarChar(500)
+  HasAPI       Boolean   @default(false)
+  IsActive     Boolean   @default(true)
+  CreatedAt    DateTime  @default(now())
+  UpdatedAt    DateTime? @updatedAt
+
+  carrierOrders CarrierOrder[]
+
+  @@map("Carriers")
+}
