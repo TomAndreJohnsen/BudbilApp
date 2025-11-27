@@ -17,7 +17,7 @@ const ALLOWED_IPS = [
 // Sett til true for å aktivere IP-sjekk
 const IP_CHECK_ENABLED = true;
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   if (!IP_CHECK_ENABLED || ALLOWED_IPS.length === 0) {
     return NextResponse.next();
   }
