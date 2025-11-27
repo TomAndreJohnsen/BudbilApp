@@ -111,37 +111,37 @@ export default function CarriersPage() {
           <button
             key={carrier.CarrierID}
             onClick={() => selectCarrier(carrier.CarrierID)}
-            className="flex flex-col items-center justify-center hover:brightness-105 active:scale-[0.98] transition-all"
+            className="flex flex-col hover:brightness-105 active:scale-[0.98] transition-all overflow-hidden"
             style={{
               backgroundColor: '#8faa8f',
               borderRadius: '16px',
-              padding: '16px',
             }}
           >
-            {/* White circle for logo - 120px diameter */}
-            <div
-              className="bg-white rounded-full flex items-center justify-center overflow-hidden mb-3"
-              style={{ width: '120px', height: '120px' }}
-            >
-              {carrier.LogoPath ? (
-                <img
-                  src={carrier.LogoPath.startsWith("/") ? carrier.LogoPath : `/${carrier.LogoPath}`}
-                  alt={carrier.CompanyName}
-                  className="w-[80%] h-[80%] object-contain"
-                />
-              ) : (
-                <span className="text-3xl font-bold text-[#1a3a3a]">
-                  {carrier.CompanyName.substring(0, 2).toUpperCase()}
-                </span>
-              )}
+            {/* Top half - Logo */}
+            <div className="flex-1 flex items-center justify-center p-3" style={{ marginTop: '30px' }}>
+              <div className="bg-white rounded-full flex items-center justify-center overflow-hidden w-full h-full max-w-[140px] max-h-[140px] aspect-square">
+                {carrier.LogoPath ? (
+                  <img
+                    src={carrier.LogoPath.startsWith("/") ? carrier.LogoPath : `/${carrier.LogoPath}`}
+                    alt={carrier.CompanyName}
+                    className="w-[80%] h-[80%] object-contain"
+                  />
+                ) : (
+                  <span className="text-3xl font-bold text-[#1a3a3a]">
+                    {carrier.CompanyName.substring(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </div>
             </div>
-            {/* Company name - 18px, font-weight 600, color #1a3a3a */}
-            <span
-              className="text-center leading-tight px-2"
-              style={{ color: '#1a3a3a', fontSize: '18px', fontWeight: 600 }}
-            >
-              {carrier.CompanyName}
-            </span>
+            {/* Bottom half - Company name */}
+            <div className="flex-1 flex items-center justify-center px-2">
+              <span
+                className="text-center leading-tight"
+                style={{ color: '#1a3a3a', fontSize: '5vh', fontWeight: 600 }}
+              >
+                {carrier.CompanyName}
+              </span>
+            </div>
           </button>
         ))}
       </div>

@@ -38,6 +38,7 @@ function OrdersContent() {
   const [carrierName, setCarrierName] = useState<string>("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<number>>(new Set());
 
   const totalPages = Math.ceil(orders.length / ITEMS_PER_PAGE);
   const startIndex = currentPage * ITEMS_PER_PAGE;
@@ -73,8 +74,28 @@ function OrdersContent() {
     setSelectedOrder(order);
   }
 
-  function goToSignature(order: Order) {
-    navigate(`/orders/signature?orders=${order.OrderID}&carrier=${carrierId || ""}`);
+  function addToSelected(order: Order) {
+    setSelectedOrderIds(prev => new Set(prev).add(order.OrderID));
+    setSelectedOrder(null);
+  }
+
+  function removeFromSelected(order: Order) {
+    setSelectedOrderIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(order.OrderID);
+      return newSet;
+    });
+    setSelectedOrder(null);
+  }
+
+  function goToSignature() {
+    // Include current modal order if open and not already selected
+    const allOrderIds = new Set(selectedOrderIds);
+    if (selectedOrder) {
+      allOrderIds.add(selectedOrder.OrderID);
+    }
+    const orderIdsArray = Array.from(allOrderIds);
+    navigate(`/orders/signature?orders=${orderIdsArray.join(",")}&carrier=${carrierId || ""}`);
   }
 
   if (loading) {
@@ -84,6 +105,8 @@ function OrdersContent() {
       </div>
     );
   }
+
+  const showEmptyModal = carrierId && orders.length === 0;
 
   return (
     <div className="h-dvh bg-[#073F4B] flex flex-col">
@@ -98,10 +121,14 @@ function OrdersContent() {
           gap: '16px',
         }}
       >
-        {visibleOrders.map((order) => (
+        {visibleOrders.map((order) => {
+          const isSelected = selectedOrderIds.has(order.OrderID);
+          return (
           <div
             key={order.OrderID}
-            className="bg-[#9CBD93] rounded-[2vh] shadow-lg flex overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.97] transition-transform"
+            className={`rounded-[2vh] shadow-lg flex overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.97] transition-all ${
+              isSelected ? "bg-[#9CBD93]/50 ring-4 ring-[#E8C547]" : "bg-[#9CBD93]"
+            }`}
             onClick={() => openOrderDetail(order)}
           >
             {/* Image on left - smaller portion */}
@@ -136,7 +163,8 @@ function OrdersContent() {
               </p>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       {/* Bottom Navigation Bar - same positioning as /carriers */}
@@ -158,11 +186,11 @@ function OrdersContent() {
           TILBAKE
         </button>
         <button
-          onClick={() => navigate("/orders")}
+          onClick={() => navigate(carrierId ? "/orders" : "/carriers")}
           className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
           style={{ fontSize: '2rem' }}
         >
-          MINE ORDRE
+          {carrierId ? "ALLE ORDRE" : "MINE ORDRE"}
         </button>
         {/* Pagination dots */}
         <button
@@ -285,23 +313,53 @@ function OrdersContent() {
               LUKK
             </button>
             <button
+              onClick={() => addToSelected(selectedOrder)}
               className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
               style={{ fontSize: '2rem' }}
             >
               HENT FLERE
             </button>
             <button
-              className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
+              onClick={() => removeFromSelected(selectedOrder)}
+              disabled={!selectedOrderIds.has(selectedOrder.OrderID)}
+              className={`flex-1 rounded-xl font-extrabold uppercase shadow-lg hover:brightness-110 transition-all ${
+                selectedOrderIds.has(selectedOrder.OrderID)
+                  ? "bg-[#073F4B] text-white border-[3px] border-[#9CBD93]"
+                  : "bg-[#073F4B]/50 text-white/50 border-[3px] border-[#9CBD93]/50 cursor-not-allowed"
+              }`}
               style={{ fontSize: '2rem' }}
             >
               FJERN ORDRE
             </button>
             <button
-              onClick={() => goToSignature(selectedOrder)}
+              onClick={() => goToSignature()}
               className="flex-1 rounded-xl font-extrabold uppercase bg-[#9CBD93] text-[#073F4B] shadow-lg hover:brightness-110 transition-all"
               style={{ fontSize: '2rem' }}
             >
-              HENT UT
+              {selectedOrderIds.size > 0 || selectedOrder
+                ? `HENT UT (${selectedOrderIds.has(selectedOrder.OrderID) ? selectedOrderIds.size : selectedOrderIds.size + 1})`
+                : "HENT UT"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state modal when carrier has no orders */}
+      {showEmptyModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center">
+          <div
+            className="bg-[#073F4B] border-[3px] border-[#9CBD93] rounded-xl flex flex-col items-center justify-center"
+            style={{ padding: '5vh 6vw' }}
+          >
+            <p className="text-white text-center mb-[4vh]" style={{ fontSize: '5vh' }}>
+              Ingen ordre på <span className="font-bold text-[#9CBD93]">{carrierName || "valgt firma"}</span>
+            </p>
+            <button
+              onClick={() => navigate("/orders")}
+              className="rounded-xl font-extrabold uppercase bg-[#9CBD93] text-[#073F4B] shadow-lg hover:brightness-110 transition-all w-full"
+              style={{ fontSize: '2rem', padding: '2vh 4vw' }}
+            >
+              VIS ALLE ORDRE
             </button>
           </div>
         </div>

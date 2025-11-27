@@ -131,12 +131,12 @@ function SignatureContent() {
             />
           </div>
           <div className="flex flex-col gap-[1vh]">
-            <label className="text-white font-semibold" style={{ fontSize: '5vh' }}>Ordrenummer</label>
+            <label className="text-white font-semibold" style={{ fontSize: '5vh' }}>Deres ref.</label>
             <input
               type="text"
               value={orderReference}
               onChange={(e) => setOrderReference(e.target.value)}
-              placeholder="Skriv inn ordrenr..."
+              placeholder="Budbils referanse..."
               className="rounded-xl bg-white text-[#073F4B] border-none outline-none"
               style={{ padding: '2vh', fontSize: '5vh' }}
             />
