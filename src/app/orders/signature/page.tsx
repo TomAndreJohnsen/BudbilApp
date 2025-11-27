@@ -12,9 +12,17 @@ interface OrderInfo {
 
 function SignatureContent() {
   const searchParams = useSearchParams();
-  const { navigate, goBack } = usePageTransition();
+  const { navigate } = usePageTransition();
   const orderIds = searchParams.get("orders")?.split(",").map(Number) || [];
   const carrierId = searchParams.get("carrier");
+  const selectedParam = searchParams.get("selected") || "";
+
+  function goBackToOrders() {
+    const params = new URLSearchParams();
+    if (carrierId) params.set("carrier", carrierId);
+    if (selectedParam) params.set("selected", selectedParam);
+    navigate(`/orders?${params.toString()}`);
+  }
 
   const sigCanvas = useRef<SignatureCanvas>(null);
   const [driverName, setDriverName] = useState("");
@@ -189,7 +197,7 @@ function SignatureContent() {
         }}
       >
         <button
-          onClick={() => goBack()}
+          onClick={goBackToOrders}
           disabled={saving}
           className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all disabled:opacity-50"
           style={{ fontSize: '2rem' }}

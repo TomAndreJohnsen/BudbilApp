@@ -38,7 +38,14 @@ function OrdersContent() {
   const [carrierName, setCarrierName] = useState<string>("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
-  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<number>>(new Set());
+  const selectedParam = searchParams.get("selected");
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<number>>(() => {
+    if (selectedParam) {
+      const ids = selectedParam.split(",").map(Number).filter(n => !isNaN(n));
+      return new Set(ids);
+    }
+    return new Set();
+  });
 
   const totalPages = Math.ceil(orders.length / ITEMS_PER_PAGE);
   const startIndex = currentPage * ITEMS_PER_PAGE;
@@ -95,7 +102,11 @@ function OrdersContent() {
       allOrderIds.add(selectedOrder.OrderID);
     }
     const orderIdsArray = Array.from(allOrderIds);
-    navigate(`/orders/signature?orders=${orderIdsArray.join(",")}&carrier=${carrierId || ""}`);
+    const params = new URLSearchParams();
+    params.set("orders", orderIdsArray.join(","));
+    if (carrierId) params.set("carrier", carrierId);
+    params.set("selected", orderIdsArray.join(","));
+    navigate(`/orders/signature?${params.toString()}`);
   }
 
   if (loading) {
