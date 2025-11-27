@@ -1,12 +1,18 @@
 "use client";
 
-import { useRef, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRef, useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { usePageTransition } from "@/lib/usePageTransition";
 import SignatureCanvas from "react-signature-canvas";
+
+interface OrderInfo {
+  shelfNumber: number | null;
+  numberOfPackages: number | null;
+}
 
 function SignatureContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const { navigate, goBack } = usePageTransition();
   const orderIds = searchParams.get("orders")?.split(",").map(Number) || [];
   const carrierId = searchParams.get("carrier");
 
@@ -16,6 +22,29 @@ function SignatureContent() {
   const [orderReference, setOrderReference] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showLocation, setShowLocation] = useState(false);
+  const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
+
+  // Fetch order info on mount
+  useEffect(() => {
+    async function fetchOrderInfo() {
+      if (orderIds.length === 0) return;
+      try {
+        const res = await fetch(`/api/orders?ids=${orderIds.join(",")}`);
+        const data = await res.json();
+        if (data.orders && data.orders.length > 0) {
+          const order = data.orders[0];
+          setOrderInfo({
+            shelfNumber: order.carrierOrder?.ShelfNumber || null,
+            numberOfPackages: order.NumberOfPackages || 1,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch order info:", err);
+      }
+    }
+    fetchOrderInfo();
+  }, []);
 
   function clearSignature() {
     sigCanvas.current?.clear();
@@ -50,7 +79,7 @@ function SignatureContent() {
       });
 
       if (res.ok) {
-        router.push("/?success=true");
+        navigate("/?success=true");
       } else {
         const data = await res.json();
         setError(data.error || "Noe gikk galt");
@@ -64,110 +93,168 @@ function SignatureContent() {
   }
 
   return (
-    <div className="h-dvh bg-[#073F4B] flex flex-col p-4">
-      {/* Yellow Header with Order ID */}
-      <div className="bg-[#FDD835] rounded-xl py-3 mb-4">
-        <p className="text-center text-[#073F4B] font-bold text-xl">
-          OrdreID: {orderIds.join(", ")}
-        </p>
-      </div>
+    <div className="h-dvh bg-[#073F4B] overflow-hidden">
+      {/* Content area */}
+      <div
+        className="absolute flex flex-col"
+        style={{
+          top: '20px',
+          left: '40px',
+          right: '40px',
+          bottom: '120px',
+          gap: '2vh',
+        }}
+      >
+        {/* 3 Input Fields in a row */}
+        <div className="grid grid-cols-3 gap-[16px]">
+          <div className="flex flex-col gap-[1vh]">
+            <label className="text-white font-semibold" style={{ fontSize: '5vh' }}>Navn</label>
+            <input
+              type="text"
+              value={driverName}
+              onChange={(e) => setDriverName(e.target.value)}
+              placeholder="Skriv inn navn..."
+              className="rounded-xl bg-white text-[#073F4B] border-none outline-none"
+              style={{ padding: '2vh', fontSize: '5vh' }}
+            />
+          </div>
+          <div className="flex flex-col gap-[1vh]">
+            <label className="text-white font-semibold" style={{ fontSize: '5vh' }}>Telefon</label>
+            <input
+              type="tel"
+              inputMode="tel"
+              value={driverPhone}
+              onChange={(e) => setDriverPhone(e.target.value)}
+              placeholder="Skriv inn telefon..."
+              className="rounded-xl bg-white text-[#073F4B] border-none outline-none"
+              style={{ padding: '2vh', fontSize: '5vh' }}
+            />
+          </div>
+          <div className="flex flex-col gap-[1vh]">
+            <label className="text-white font-semibold" style={{ fontSize: '5vh' }}>Ordrenummer</label>
+            <input
+              type="text"
+              value={orderReference}
+              onChange={(e) => setOrderReference(e.target.value)}
+              placeholder="Skriv inn ordrenr..."
+              className="rounded-xl bg-white text-[#073F4B] border-none outline-none"
+              style={{ padding: '2vh', fontSize: '5vh' }}
+            />
+          </div>
+        </div>
 
-      {/* 3 Input Fields in a row */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <div>
-          <label className="text-[#9CBD93] text-sm font-medium mb-1 block">Navn</label>
-          <input
-            type="text"
-            value={driverName}
-            onChange={(e) => setDriverName(e.target.value)}
-            placeholder="Skriv inn navn..."
-            className="w-full p-3 text-base rounded-xl bg-[#9CBD93]/20 text-white border border-[#9CBD93]/50 outline-none placeholder:text-white/50"
+        {/* Signature label */}
+        <label className="text-white font-semibold" style={{ fontSize: '5vh' }}>
+          Signatur
+        </label>
+
+        {/* Signature Canvas */}
+        <div
+          className="bg-white rounded-xl shadow-inner flex-1"
+          style={{ minHeight: '30vh', touchAction: 'none' }}
+        >
+          <SignatureCanvas
+            ref={sigCanvas}
+            canvasProps={{
+              className: "w-full h-full rounded-xl",
+              style: { width: "100%", height: "100%", touchAction: "none", cursor: "crosshair" },
+            }}
+            backgroundColor="white"
+            penColor="black"
+            minWidth={2}
+            maxWidth={4}
           />
         </div>
-        <div>
-          <label className="text-[#9CBD93] text-sm font-medium mb-1 block">Telefon</label>
-          <input
-            type="tel"
-            inputMode="tel"
-            value={driverPhone}
-            onChange={(e) => setDriverPhone(e.target.value)}
-            placeholder="Skriv inn telefon..."
-            className="w-full p-3 text-base rounded-xl bg-[#9CBD93]/20 text-white border border-[#9CBD93]/50 outline-none placeholder:text-white/50"
-          />
-        </div>
-        <div>
-          <label className="text-[#9CBD93] text-sm font-medium mb-1 block">Ordrenummer</label>
-          <input
-            type="text"
-            value={orderReference}
-            onChange={(e) => setOrderReference(e.target.value)}
-            placeholder="Skriv inn ordrenr..."
-            className="w-full p-3 text-base rounded-xl bg-[#9CBD93]/20 text-white border border-[#9CBD93]/50 outline-none placeholder:text-white/50"
-          />
-        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div
+            className="bg-red-500/20 border-2 border-red-500 rounded-xl text-red-400 text-center font-bold"
+            style={{ padding: '2vh', fontSize: '5vh' }}
+          >
+            {error}
+          </div>
+        )}
       </div>
 
-      {/* Signature label */}
-      <label className="text-[#9CBD93] text-sm font-medium mb-1 block">Signatur</label>
-
-      {/* Signature Canvas */}
-      <div className="flex-1 bg-white rounded-xl relative mb-4">
-        <SignatureCanvas
-          ref={sigCanvas}
-          canvasProps={{
-            className: "w-full h-full rounded-xl touch-none",
-            style: { width: "100%", height: "100%", touchAction: "none" },
-          }}
-          backgroundColor="white"
-          penColor="black"
-          minWidth={2}
-          maxWidth={4}
-        />
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 p-2 bg-red-500/20 border border-red-500 rounded-xl text-red-400 text-center text-sm">
-          {error}
-        </div>
-      )}
-
-      {/* Bottom Navigation Bar */}
-      <div className="grid grid-cols-4 gap-4 h-16">
+      {/* Bottom Navigation Bar - same style as /carriers */}
+      <div
+        className="absolute flex z-50"
+        style={{
+          bottom: '20px',
+          left: '40px',
+          right: '40px',
+          height: '80px',
+          gap: '16px',
+        }}
+      >
         <button
-          onClick={() => router.back()}
+          onClick={() => goBack()}
           disabled={saving}
-          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+          className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all disabled:opacity-50"
+          style={{ fontSize: '2rem' }}
         >
           TILBAKE
         </button>
         <button
           onClick={clearSignature}
           disabled={saving}
-          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+          className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all disabled:opacity-50"
+          style={{ fontSize: '2rem' }}
         >
-          SLETT
+          TØM
         </button>
         <button
-          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+          onClick={() => setShowLocation(true)}
+          disabled={saving}
+          className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all disabled:opacity-50"
+          style={{ fontSize: '2rem' }}
         >
-          VIS LOKASJON
+          LOKASJON
         </button>
         <button
           onClick={saveSignature}
           disabled={saving}
-          className="bg-[#9CBD93] text-white rounded-xl font-bold text-lg uppercase flex items-center justify-center gap-2"
+          className="flex-1 rounded-xl font-extrabold uppercase bg-[#9CBD93] text-[#073F4B] shadow-lg hover:brightness-110 transition-all disabled:opacity-50"
+          style={{ fontSize: '2rem' }}
         >
-          {saving ? (
-            <>
-              <i className="bi bi-arrow-repeat animate-spin"></i>
-              LAGRER...
-            </>
-          ) : (
-            "BEKREFT"
-          )}
+          {saving ? "LAGRER..." : "BEKREFT"}
         </button>
       </div>
+
+      {/* Location Popup */}
+      {showLocation && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center"
+          onClick={() => setShowLocation(false)}
+        >
+          <div
+            className="bg-[#073F4B] rounded-xl border-[3px] border-[#9CBD93] flex flex-col gap-[3vh]"
+            style={{ padding: '4vh 5vw' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex gap-[3vw]">
+              <div className="bg-gradient-to-r from-[#E91E63] to-[#C2185B] rounded-xl text-center px-[4vw] py-[3vh]">
+                <span className="text-white font-extrabold" style={{ fontSize: '6vh' }}>
+                  HYLLE {orderInfo?.shelfNumber || "-"}
+                </span>
+              </div>
+              <div className="bg-gradient-to-r from-[#26A69A] to-[#00897B] rounded-xl text-center px-[4vw] py-[3vh]">
+                <span className="text-white font-extrabold" style={{ fontSize: '6vh' }}>
+                  KOLLI: {orderInfo?.numberOfPackages || 1}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowLocation(false)}
+              className="rounded-xl font-extrabold uppercase bg-[#9CBD93] text-[#073F4B] shadow-lg hover:brightness-110 transition-all"
+              style={{ fontSize: '2rem', padding: '2vh 4vw' }}
+            >
+              LUKK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -177,7 +264,7 @@ export default function SignaturePage() {
     <Suspense
       fallback={
         <div className="h-dvh w-full bg-[#073F4B] flex items-center justify-center">
-          <div className="text-white text-2xl">Laster...</div>
+          <div className="text-white font-bold" style={{ fontSize: '3rem' }}>Laster...</div>
         </div>
       }
     >

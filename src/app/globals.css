@@ -92,6 +92,15 @@ input, textarea {
   }
 }
 
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -107,6 +116,45 @@ input, textarea {
 
 .animate-pulse-slow {
   animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* View Transitions API - smooth page morphing */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: fade-out 0.25s ease-out forwards;
+}
+
+::view-transition-new(root) {
+  animation: fade-in 0.25s ease-in forwards;
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .animate-spin {

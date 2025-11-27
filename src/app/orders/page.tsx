@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { usePageTransition } from "@/lib/usePageTransition";
 
 interface Order {
   OrderID: number;
@@ -29,7 +30,7 @@ const ITEMS_PER_PAGE = 6;
 
 function OrdersContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const { navigate } = usePageTransition();
   const carrierId = searchParams.get("carrier");
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -73,29 +74,38 @@ function OrdersContent() {
   }
 
   function goToSignature(order: Order) {
-    router.push(`/orders/signature?orders=${order.OrderID}&carrier=${carrierId || ""}`);
+    navigate(`/orders/signature?orders=${order.OrderID}&carrier=${carrierId || ""}`);
   }
 
   if (loading) {
     return (
       <div className="h-dvh w-full bg-[#073F4B] flex items-center justify-center">
-        <div className="text-white text-2xl">Laster...</div>
+        <div className="text-white font-bold" style={{ fontSize: '3rem' }}>Laster...</div>
       </div>
     );
   }
 
   return (
-    <div className="h-dvh bg-[#073F4B] flex flex-col p-4">
-      {/* Orders Grid - 3 cols x 2 rows */}
-      <div className="flex-1 grid grid-cols-3 grid-rows-2 gap-4 mb-4">
+    <div className="h-dvh bg-[#073F4B] flex flex-col">
+      {/* Orders Grid - 2 cols x 3 rows (like old Flask design) */}
+      <div
+        className="absolute grid grid-cols-2 grid-rows-3"
+        style={{
+          top: '20px',
+          left: '40px',
+          right: '40px',
+          bottom: '120px',
+          gap: '16px',
+        }}
+      >
         {visibleOrders.map((order) => (
           <div
             key={order.OrderID}
-            className="bg-white rounded-2xl shadow-lg flex overflow-hidden cursor-pointer hover:scale-[0.99] active:scale-[0.97] transition-transform"
+            className="bg-[#9CBD93] rounded-[2vh] shadow-lg flex overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.97] transition-transform"
             onClick={() => openOrderDetail(order)}
           >
-            {/* Image on left */}
-            <div className="w-1/3 bg-gray-200 flex-shrink-0">
+            {/* Image on left - smaller portion */}
+            <div className="w-[14vw] h-full bg-gray-200 flex-shrink-0">
               {order.PhotoURL ? (
                 <img
                   src={order.PhotoURL}
@@ -103,25 +113,25 @@ function OrdersContent() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[#9CBD93]/30">
-                  <i className="bi bi-box-seam text-4xl text-[#073F4B]/50"></i>
+                <div className="w-full h-full flex items-center justify-center bg-[#073F4B]/20">
+                  <span style={{ fontSize: '6vh' }}>📦</span>
                 </div>
               )}
             </div>
             {/* Info on right */}
-            <div className="flex-1 p-4 flex flex-col justify-center">
-              <h3 className="text-[#073F4B] font-bold text-lg leading-tight mb-1">
+            <div className="flex-1 flex flex-col justify-center gap-[1vh]" style={{ padding: '2vh 2vw' }}>
+              <h3 className="text-[#073F4B] font-bold leading-tight" style={{ fontSize: '3.5vh' }}>
                 {order.CustomerName || "Ukjent kunde"}
               </h3>
               {order.DeliveryAddress && (
-                <p className="text-gray-600 text-sm mb-2">{order.DeliveryAddress}</p>
+                <p className="text-[#073F4B]/80" style={{ fontSize: '3.5vh' }}>{order.DeliveryAddress}</p>
               )}
               {getPostalCode(order) && (
-                <span className="inline-block bg-[#9CBD93] text-white px-3 py-1 rounded text-sm font-bold w-fit mb-2">
+                <span className="inline-block bg-[#D4E157] text-[#073F4B] rounded-[1vh] font-bold w-fit" style={{ fontSize: '3.5vh', padding: '0.8vh 1.5vw' }}>
                   {getPostalCode(order)} {order.DeliveryCity || ""}
                 </span>
               )}
-              <p className="text-[#9CBD93] text-sm font-medium">
+              <p className="text-white font-medium italic" style={{ fontSize: '3.5vh' }}>
                 Trykk for mer info
               </p>
             </div>
@@ -129,126 +139,170 @@ function OrdersContent() {
         ))}
       </div>
 
-      {/* Bottom Navigation Bar */}
-      <div className="grid grid-cols-4 gap-4 h-16">
+      {/* Bottom Navigation Bar - same positioning as /carriers */}
+      <div
+        className="absolute flex z-50"
+        style={{
+          bottom: '20px',
+          left: '40px',
+          right: '40px',
+          height: '80px',
+          gap: '16px',
+        }}
+      >
         <button
-          onClick={() => router.push("/carriers")}
-          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+          onClick={() => navigate("/carriers")}
+          className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
+          style={{ fontSize: '2rem' }}
         >
           TILBAKE
         </button>
         <button
-          onClick={() => router.push("/orders")}
-          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+          onClick={() => navigate("/orders")}
+          className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
+          style={{ fontSize: '2rem' }}
         >
           MINE ORDRE
         </button>
         {/* Pagination dots */}
-        <div className="border-2 border-[#9CBD93] rounded-xl flex items-center justify-center gap-2">
+        <button
+          onClick={() => setCurrentPage((currentPage + 1) % Math.max(totalPages, 1))}
+          className="flex-1 rounded-xl bg-[#073F4B] border-[3px] border-[#9CBD93] shadow-lg flex items-center justify-center gap-4 hover:brightness-110 transition-all"
+        >
           {Array.from({ length: Math.max(totalPages, 1) }).map((_, i) => (
-            <button
+            <span
               key={i}
-              onClick={() => setCurrentPage(i)}
-              className={`w-3 h-3 rounded-full transition-colors ${
-                i === currentPage ? "bg-white" : "bg-white/30"
+              className={`w-5 h-5 rounded-full transition-colors ${
+                i === currentPage ? "bg-white" : "bg-transparent border-2 border-white/70"
               }`}
             />
           ))}
-        </div>
+        </button>
         <button
-          onClick={() => router.push("/")}
-          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+          onClick={() => navigate("/")}
+          className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
+          style={{ fontSize: '2rem' }}
         >
           HJEM
         </button>
       </div>
 
-      {/* Order Detail Modal */}
+      {/* Order Detail Modal - Full Screen */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#073F4B] rounded-2xl w-full max-w-3xl overflow-hidden">
-            {/* Header badges */}
-            <div className="flex">
-              <div className="flex-1 bg-[#E91E63] py-3 text-center">
-                <span className="text-white font-bold text-2xl">
-                  HYLLE {selectedOrder.carrierOrder?.ShelfNumber || "-"}
-                </span>
-              </div>
-              <div className="flex-1 bg-[#26A69A] py-3 text-center">
-                <span className="text-white font-bold text-2xl">
-                  KOLLI: {selectedOrder.NumberOfPackages || 1}
-                </span>
-              </div>
+        <div className="fixed inset-0 bg-[#073F4B] z-[100] overflow-hidden">
+          {/* Header badges */}
+          <div className="flex">
+            <div className="flex-1 bg-gradient-to-r from-[#E91E63] to-[#C2185B] text-center" style={{ padding: '3vh 0' }}>
+              <span className="text-white font-extrabold" style={{ fontSize: '5vh' }}>
+                HYLLE {selectedOrder.carrierOrder?.ShelfNumber || "-"}
+              </span>
             </div>
+            <div className="flex-1 bg-gradient-to-r from-[#26A69A] to-[#00897B] text-center" style={{ padding: '3vh 0' }}>
+              <span className="text-white font-extrabold" style={{ fontSize: '5vh' }}>
+                KOLLI: {selectedOrder.NumberOfPackages || 1}
+              </span>
+            </div>
+          </div>
 
-            {/* Content */}
-            <div className="p-6 flex gap-6">
-              {/* Image */}
-              <div className="w-1/2">
-                {selectedOrder.PhotoURL ? (
-                  <img
-                    src={selectedOrder.PhotoURL}
-                    alt="Ordre"
-                    className="w-full rounded-xl"
-                  />
-                ) : (
-                  <div className="w-full h-64 bg-[#9CBD93]/20 rounded-xl flex items-center justify-center">
-                    <i className="bi bi-image text-6xl text-white/30"></i>
-                  </div>
-                )}
-              </div>
-              {/* Info */}
-              <div className="flex-1 text-white space-y-2">
-                <p>
-                  <span className="text-[#9CBD93]">Kunde:</span>{" "}
-                  {selectedOrder.CustomerName || "Ukjent"}
-                </p>
-                <p>
-                  <span className="text-[#9CBD93]">OrdreID:</span>{" "}
-                  {selectedOrder.OrderID}
-                </p>
-                <p>
-                  <span className="text-[#9CBD93]">Ref:</span>{" "}
-                  {selectedOrder.Reference || selectedOrder.DeliveryAddress || "-"}
-                </p>
-                <p>
-                  <span className="text-[#9CBD93]">Vekt:</span>{" "}
-                  {selectedOrder.Weight || 0} kg
-                </p>
-                {selectedOrder.Comment && (
-                  <p>
-                    <span className="text-[#9CBD93]">Kommentar:</span>{" "}
-                    <span className="italic">{selectedOrder.Comment}</span>
-                  </p>
-                )}
-              </div>
+          {/* Content */}
+          <div
+            className="absolute flex gap-[4vw]"
+            style={{
+              top: '14vh',
+              left: '40px',
+              right: '40px',
+              bottom: '120px',
+            }}
+          >
+            {/* Image */}
+            <div className="w-1/2 flex items-center justify-center">
+              {selectedOrder.PhotoURL ? (
+                <img
+                  src={selectedOrder.PhotoURL}
+                  alt="Ordre"
+                  className="max-w-full max-h-full rounded-[2vh] object-contain"
+                />
+              ) : (
+                <div className="w-full h-full bg-[#9CBD93]/20 rounded-[2vh] flex items-center justify-center">
+                  <span style={{ fontSize: '15vh' }}>📦</span>
+                </div>
+              )}
             </div>
+            {/* Info */}
+            <div className="flex-1 text-white flex flex-col justify-center gap-[2vh]">
+              <p className="font-bold" style={{ fontSize: '6vh' }}>
+                {selectedOrder.CustomerName || "Ukjent"}
+              </p>
+              <p style={{ fontSize: '5vh' }}>
+                {selectedOrder.DeliveryAddress || "-"}
+              </p>
+              <p
+                className="font-bold rounded-lg w-fit"
+                style={{
+                  fontSize: '5vh',
+                  backgroundColor: '#E8C547',
+                  color: '#1a3a3a',
+                  padding: '1vh 2vw',
+                }}
+              >
+                {selectedOrder.DeliveryZip || selectedOrder.DeliveryPostalCode || "-"} {selectedOrder.DeliveryCity || ""}
+              </p>
+              <p style={{ fontSize: '5vh' }}>
+                <span className="text-[#9CBD93] font-bold">Vekt:</span>{" "}
+                {selectedOrder.Weight || 0} kg
+              </p>
+              {selectedOrder.Comment && (
+                <p
+                  className="rounded-lg italic"
+                  style={{
+                    fontSize: '4vh',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    padding: '1.5vh 2vw',
+                  }}
+                >
+                  {selectedOrder.Comment}
+                </p>
+              )}
+            </div>
+          </div>
 
-            {/* Bottom buttons */}
-            <div className="grid grid-cols-4 gap-4 p-4">
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-base py-3 uppercase"
-              >
-                LUKK
-              </button>
-              <button
-                className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-base py-3 uppercase"
-              >
-                HENT FLERE
-              </button>
-              <button
-                className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-base py-3 uppercase"
-              >
-                FJERN ORDRE
-              </button>
-              <button
-                onClick={() => goToSignature(selectedOrder)}
-                className="bg-[#9CBD93] text-white rounded-xl font-bold text-base py-3 uppercase"
-              >
-                HENT UT ORDRE
-              </button>
-            </div>
+          {/* Bottom buttons - same style as /carriers */}
+          <div
+            className="absolute flex z-50"
+            style={{
+              bottom: '20px',
+              left: '40px',
+              right: '40px',
+              height: '80px',
+              gap: '16px',
+            }}
+          >
+            <button
+              onClick={() => setSelectedOrder(null)}
+              className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
+              style={{ fontSize: '2rem' }}
+            >
+              LUKK
+            </button>
+            <button
+              className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
+              style={{ fontSize: '2rem' }}
+            >
+              HENT FLERE
+            </button>
+            <button
+              className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
+              style={{ fontSize: '2rem' }}
+            >
+              FJERN ORDRE
+            </button>
+            <button
+              onClick={() => goToSignature(selectedOrder)}
+              className="flex-1 rounded-xl font-extrabold uppercase bg-[#9CBD93] text-[#073F4B] shadow-lg hover:brightness-110 transition-all"
+              style={{ fontSize: '2rem' }}
+            >
+              HENT UT
+            </button>
           </div>
         </div>
       )}
@@ -261,7 +315,7 @@ export default function OrdersPage() {
     <Suspense
       fallback={
         <div className="h-dvh w-full bg-[#073F4B] flex items-center justify-center">
-          <div className="text-white text-2xl">Laster...</div>
+          <div className="text-white font-bold" style={{ fontSize: '3rem' }}>Laster...</div>
         </div>
       }
     >

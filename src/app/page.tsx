@@ -1,18 +1,26 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePageTransition } from "@/lib/usePageTransition";
 
 export default function Home() {
-  const router = useRouter();
+  const { navigate } = usePageTransition();
 
   return (
-    <div className="h-dvh w-full bg-[var(--color-bg)] flex flex-col justify-center items-center gap-8">
-      <h1 className="text-white font-extrabold text-6xl md:text-7xl lg:text-8xl tracking-wider uppercase animate-fadeInDown">
+    <div className="h-dvh w-full bg-[#073F4B] flex flex-col justify-center items-center gap-[8vh]">
+      <h1
+        className="text-white font-extrabold tracking-wider uppercase"
+        style={{ fontSize: 'clamp(8vh, 14vh, 18vh)', letterSpacing: '0.6vw' }}
+      >
         BUDBIL
       </h1>
       <button
-        onClick={() => router.push("/carriers")}
-        className="w-40 h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-full bg-[var(--color-accent)] text-white font-extrabold text-xl md:text-2xl uppercase shadow-2xl hover:scale-95 active:scale-90 transition-transform animate-pulse-slow flex items-center justify-center"
+        onClick={() => navigate("/carriers")}
+        className="rounded-full bg-[#9CBD93] text-white font-extrabold uppercase shadow-2xl hover:scale-95 active:scale-90 transition-transform flex items-center justify-center animate-breathe"
+        style={{
+          width: 'clamp(22vh, 30vh, 38vh)',
+          height: 'clamp(22vh, 30vh, 38vh)',
+          fontSize: 'clamp(2.4vh, 3.2vh, 4vh)'
+        }}
       >
         TRYKK HER
       </button>

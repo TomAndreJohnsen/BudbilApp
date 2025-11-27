@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePageTransition } from "@/lib/usePageTransition";
 
 interface Carrier {
   CarrierID: number;
@@ -13,7 +13,7 @@ interface Carrier {
 const ITEMS_PER_PAGE = 8;
 
 export default function CarriersPage() {
-  const router = useRouter();
+  const { navigate } = usePageTransition();
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
@@ -45,7 +45,7 @@ export default function CarriersPage() {
   }
 
   function selectCarrier(carrierId: number) {
-    router.push(`/orders?carrier=${carrierId}`);
+    navigate(`/orders?carrier=${carrierId}`);
   }
 
   async function verifyPin() {
@@ -89,83 +89,119 @@ export default function CarriersPage() {
   if (loading) {
     return (
       <div className="h-dvh w-full bg-[#073F4B] flex items-center justify-center">
-        <div className="text-white text-2xl">Laster...</div>
+        <div className="text-white font-bold" style={{ fontSize: '3rem' }}>Laster...</div>
       </div>
     );
   }
 
   return (
-    <div className="h-dvh bg-[#073F4B] flex flex-col p-4">
+    <div className="h-dvh bg-[#073F4B] overflow-hidden">
       {/* Carrier Grid - 4x2 */}
-      <div className="flex-1 grid grid-cols-4 grid-rows-2 gap-4 mb-4">
+      <div
+        className="absolute grid grid-cols-4 grid-rows-2"
+        style={{
+          top: '40px',
+          left: '40px',
+          right: '40px',
+          bottom: '140px',
+          gap: '16px',
+        }}
+      >
         {visibleCarriers.map((carrier) => (
           <button
             key={carrier.CarrierID}
             onClick={() => selectCarrier(carrier.CarrierID)}
-            className="bg-[#9CBD93] rounded-2xl shadow-lg flex flex-col items-center justify-center p-4 hover:scale-[0.98] active:scale-95 transition-transform"
+            className="flex flex-col items-center justify-center hover:brightness-105 active:scale-[0.98] transition-all"
+            style={{
+              backgroundColor: '#8faa8f',
+              borderRadius: '16px',
+              padding: '16px',
+            }}
           >
-            {/* White circle for logo */}
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-3 shadow-md">
+            {/* White circle for logo - 120px diameter */}
+            <div
+              className="bg-white rounded-full flex items-center justify-center overflow-hidden mb-3"
+              style={{ width: '120px', height: '120px' }}
+            >
               {carrier.LogoPath ? (
                 <img
                   src={carrier.LogoPath.startsWith("/") ? carrier.LogoPath : `/${carrier.LogoPath}`}
                   alt={carrier.CompanyName}
-                  className="w-20 h-20 object-contain rounded-full"
+                  className="w-[80%] h-[80%] object-contain"
                 />
               ) : (
-                <i className="bi bi-truck text-4xl text-[#073F4B]"></i>
+                <span className="text-3xl font-bold text-[#1a3a3a]">
+                  {carrier.CompanyName.substring(0, 2).toUpperCase()}
+                </span>
               )}
             </div>
-            {/* Company name - dark text */}
-            <span className="text-[#073F4B] font-bold text-center text-lg leading-tight">
+            {/* Company name - 18px, font-weight 600, color #1a3a3a */}
+            <span
+              className="text-center leading-tight px-2"
+              style={{ color: '#1a3a3a', fontSize: '18px', fontWeight: 600 }}
+            >
               {carrier.CompanyName}
             </span>
           </button>
         ))}
       </div>
 
-      {/* Bottom Navigation Bar */}
-      <div className="grid grid-cols-4 gap-4 h-16">
+      {/* Bottom Navigation Bar - same style as /orders */}
+      <div
+        className="absolute flex z-50"
+        style={{
+          bottom: '20px',
+          left: '40px',
+          right: '40px',
+          height: '80px',
+          gap: '16px',
+        }}
+      >
         <button
-          onClick={() => router.push("/")}
-          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+          onClick={() => navigate("/")}
+          className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
+          style={{ fontSize: '2rem' }}
         >
           TILBAKE
         </button>
         <button
           onClick={() => setShowPinModal(true)}
-          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+          className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
+          style={{ fontSize: '2rem' }}
         >
           LEGG TIL
         </button>
         {/* Pagination dots */}
-        <div className="border-2 border-[#9CBD93] rounded-xl flex items-center justify-center gap-2">
-          {Array.from({ length: totalPages }).map((_, i) => (
-            <button
+        <button
+          onClick={() => setCurrentPage((currentPage + 1) % Math.max(totalPages, 1))}
+          className="flex-1 rounded-xl bg-[#073F4B] border-[3px] border-[#9CBD93] shadow-lg flex items-center justify-center gap-4 hover:brightness-110 transition-all"
+        >
+          {Array.from({ length: Math.max(totalPages, 1) }).map((_, i) => (
+            <span
               key={i}
-              onClick={() => setCurrentPage(i)}
-              className={`w-3 h-3 rounded-full transition-colors ${
-                i === currentPage ? "bg-white" : "bg-white/30"
+              className={`w-5 h-5 rounded-full transition-colors ${
+                i === currentPage ? "bg-white" : "bg-transparent border-2 border-white/70"
               }`}
             />
           ))}
-        </div>
+        </button>
         <button
-          onClick={() => router.push("/")}
-          className="border-2 border-[#9CBD93] text-[#9CBD93] rounded-xl font-bold text-lg uppercase hover:bg-[#9CBD93]/10 transition-colors"
+          onClick={() => navigate("/")}
+          className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
+          style={{ fontSize: '2rem' }}
         >
           HJEM
         </button>
       </div>
 
-      {/* PIN Modal */}
+      {/* PIN Modal - Full Screen */}
       {showPinModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#073F4B] p-8 rounded-2xl w-full max-w-lg border border-[#9CBD93]/30">
-            <h2 className="text-[#9CBD93] text-2xl font-bold mb-2 text-center">
+        <div className="fixed inset-0 bg-[#073F4B] z-[100] flex flex-col justify-center items-center" style={{ padding: '5vh 5vw' }}>
+          <div className="flex flex-col items-center justify-center flex-1 w-full max-w-[800px]">
+            <h2 className="text-[#9CBD93] font-extrabold text-center mb-[4vh]" style={{ fontSize: '4vh' }}>
               Be om assistanse fra en ansatt
             </h2>
-            <p className="text-white text-center mb-6">
+            <p className="text-white text-center mb-[4vh]" style={{ fontSize: '3vh' }}>
               Skriv inn pinkode for å legge til nytt firma
             </p>
             <input
@@ -175,18 +211,21 @@ export default function CarriersPage() {
               onChange={(e) => setPin(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && verifyPin()}
               placeholder="Pinkode"
-              className={`w-full p-4 text-xl text-center rounded-xl bg-white text-gray-800 border-2 ${
-                pinError ? "border-red-500" : "border-[#9CBD93]"
+              maxLength={4}
+              className={`w-full max-w-[400px] text-center rounded-[2vh] bg-white text-gray-800 mb-[4vh] ${
+                pinError ? "border-4 border-red-500" : "border-0"
               } outline-none`}
+              style={{ fontSize: '4vh', padding: '3vh' }}
               autoFocus
             />
             {pinError && (
-              <p className="text-red-400 text-center mt-2">Feil PIN-kode</p>
+              <p className="text-red-400 mb-[3vh]" style={{ fontSize: '3vh' }}>Feil PIN-kode</p>
             )}
-            <div className="flex gap-4 mt-6">
+            <div className="flex gap-[3vw] w-full max-w-[600px]">
               <button
                 onClick={verifyPin}
-                className="flex-1 p-4 rounded-xl bg-[#9CBD93] text-white font-bold text-lg uppercase"
+                className="flex-1 rounded-[2vh] bg-[#9CBD93] text-[#073F4B] font-extrabold uppercase shadow-lg"
+                style={{ fontSize: '3vh', height: '12vh' }}
               >
                 OK
               </button>
@@ -196,7 +235,8 @@ export default function CarriersPage() {
                   setPin("");
                   setPinError(false);
                 }}
-                className="flex-1 p-4 rounded-xl bg-gray-500 text-white font-bold text-lg uppercase"
+                className="flex-1 rounded-[2vh] bg-[#6B7280] text-white font-extrabold uppercase shadow-lg"
+                style={{ fontSize: '3vh', height: '12vh' }}
               >
                 AVBRYT
               </button>
@@ -205,37 +245,40 @@ export default function CarriersPage() {
         </div>
       )}
 
-      {/* Add Carrier Modal */}
+      {/* Add Carrier Modal - Full Screen */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#073F4B] p-8 rounded-2xl w-full max-w-lg border border-[#9CBD93]/30">
-            <h2 className="text-[#9CBD93] text-2xl font-bold mb-6 text-center">
-              Legg til nytt budbilfirma
+        <div className="fixed inset-0 bg-[#073F4B] z-[100] flex flex-col justify-center items-center" style={{ padding: '5vh 5vw' }}>
+          <div className="flex flex-col items-center justify-center flex-1 w-full max-w-[800px]">
+            <h2 className="text-[#9CBD93] font-extrabold text-center mb-[5vh]" style={{ fontSize: '4vh' }}>
+              Legg til budbil firma
             </h2>
             <input
               type="text"
               value={newCarrierName}
               onChange={(e) => setNewCarrierName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addCarrier()}
-              placeholder="Firmanavn"
-              className="w-full p-4 text-xl rounded-xl bg-white text-gray-800 border-2 border-[#9CBD93] outline-none"
+              placeholder="Firmanavn..."
+              className="w-full rounded-[2vh] bg-white/10 text-white border-[0.5vh] border-[#9CBD93] outline-none mb-[5vh]"
+              style={{ fontSize: '3vh', padding: '3vh 3vw' }}
               autoFocus
             />
-            <div className="flex gap-4 mt-6">
+            <div className="grid grid-cols-2 gap-[4vw] w-full">
               <button
                 onClick={addCarrier}
-                className="flex-1 p-4 rounded-xl bg-[#9CBD93] text-white font-bold text-lg uppercase"
+                className="rounded-[2vh] bg-[#9CBD93] text-[#073F4B] font-extrabold uppercase shadow-lg"
+                style={{ fontSize: '3vh', height: '12vh' }}
               >
-                OK
+                Lagre
               </button>
               <button
                 onClick={() => {
                   setShowAddModal(false);
                   setNewCarrierName("");
                 }}
-                className="flex-1 p-4 rounded-xl bg-gray-500 text-white font-bold text-lg uppercase"
+                className="rounded-[2vh] bg-[#073F4B] text-white font-extrabold uppercase border-[0.5vh] border-[#9CBD93] shadow-lg"
+                style={{ fontSize: '3vh', height: '12vh' }}
               >
-                AVBRYT
+                Avbryt
               </button>
             </div>
           </div>
