@@ -38,6 +38,7 @@ function OrdersContent() {
   const [carrierName, setCarrierName] = useState<string>("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [showAllOrders, setShowAllOrders] = useState(false);
   const selectedParam = searchParams.get("selected");
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<number>>(() => {
     if (selectedParam) {
@@ -53,11 +54,12 @@ function OrdersContent() {
 
   useEffect(() => {
     fetchOrders();
-  }, [carrierId]);
+  }, [carrierId, showAllOrders]);
 
   async function fetchOrders() {
     try {
-      const url = carrierId
+      // If showAllOrders is true, fetch all orders regardless of carrierId
+      const url = (carrierId && !showAllOrders)
         ? `/api/orders?carrier=${carrierId}&pending=true`
         : `/api/orders?pending=true`;
       const res = await fetch(url);
@@ -71,6 +73,11 @@ function OrdersContent() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function toggleOrderView() {
+    setShowAllOrders(prev => !prev);
+    setCurrentPage(0);
   }
 
   function getPostalCode(order: Order): string {
@@ -117,7 +124,7 @@ function OrdersContent() {
     );
   }
 
-  const showEmptyModal = carrierId && orders.length === 0;
+  const showEmptyModal = carrierId && !showAllOrders && orders.length === 0;
 
   return (
     <div className="h-dvh bg-[#073F4B] flex flex-col">
@@ -197,11 +204,14 @@ function OrdersContent() {
           TILBAKE
         </button>
         <button
-          onClick={() => navigate(carrierId ? "/orders" : "/carriers")}
+          onClick={() => carrierId ? toggleOrderView() : navigate("/carriers")}
           className="flex-1 rounded-xl font-extrabold uppercase bg-[#073F4B] text-white border-[3px] border-[#9CBD93] shadow-lg hover:brightness-110 transition-all"
           style={{ fontSize: '2rem' }}
         >
-          {carrierId ? "ALLE ORDRE" : "MINE ORDRE"}
+          {carrierId
+            ? (showAllOrders ? "MINE ORDRE" : "ALLE ORDRE")
+            : "MINE ORDRE"
+          }
         </button>
         {/* Pagination dots */}
         <button
@@ -366,7 +376,7 @@ function OrdersContent() {
               Ingen ordre på <span className="font-bold text-[#9CBD93]">{carrierName || "valgt firma"}</span>
             </p>
             <button
-              onClick={() => navigate("/orders")}
+              onClick={toggleOrderView}
               className="rounded-xl font-extrabold uppercase bg-[#9CBD93] text-[#073F4B] shadow-lg hover:brightness-110 transition-all w-full"
               style={{ fontSize: '2rem', padding: '2vh 4vw' }}
             >
