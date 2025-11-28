@@ -12,6 +12,7 @@ const ALLOWED_IPS = [
   "51.175.82.153",    // Hjemme
   "45.14.193.193",    // Home
   "46.15.85.188",     // Mobilnett Onplus
+  "46.15.8.50",       // Ny IP
 ];
 
 // Sett til true for å aktivere IP-sjekk
