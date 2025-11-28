@@ -160,6 +160,18 @@ function SignatureContent() {
         <div
           className="bg-white rounded-xl shadow-inner flex-1"
           style={{ minHeight: '30vh', touchAction: 'none' }}
+          onTouchStart={() => {
+            // Blur any focused input when touching signature area
+            if (document.activeElement instanceof HTMLElement) {
+              document.activeElement.blur();
+            }
+          }}
+          onMouseDown={() => {
+            // Same for mouse
+            if (document.activeElement instanceof HTMLElement) {
+              document.activeElement.blur();
+            }
+          }}
         >
           <SignatureCanvas
             ref={sigCanvas}
